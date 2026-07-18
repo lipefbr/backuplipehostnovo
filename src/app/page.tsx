@@ -9,6 +9,7 @@ import { FeaturedSystems } from '@/components/sections/featured-systems'
 import { HowItWorks } from '@/components/sections/how-it-works'
 import { CustomDev } from '@/components/sections/custom-dev'
 import { Consulting } from '@/components/sections/consulting'
+import { Servers } from '@/components/sections/servers'
 import { Technologies } from '@/components/sections/technologies'
 import { Portfolio } from '@/components/sections/portfolio'
 import { Testimonials } from '@/components/sections/testimonials'
@@ -70,6 +71,7 @@ export default function Home() {
         <HowItWorks />
         <CustomDev />
         <Consulting />
+        <Servers />
         <Technologies />
         <Portfolio />
         <Testimonials />

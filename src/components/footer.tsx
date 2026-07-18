@@ -154,6 +154,15 @@ export function Footer() {
             de atendimento, plataforma de ensino EAD, sistema financeiro ERP e portal imobiliário.
             Todos os sistemas podem ser personalizados e implantados com a sua marca.
           </p>
+          <p>
+            Além do desenvolvimento de software, a LIPE.HOST também oferece servidores dedicados,
+            cloud servers (VPS) e servidores gerenciados em AWS, Hetzner, Oracle Cloud, Azure e
+            Digital Ocean. Configuramos servidores profissionais com Docker, NGINX, PostgreSQL,
+            Redis, SSL, firewall, proteção DDoS, backup automático e monitoramento 24/7. Não
+            vendemos hospedagem compartilhada — entregamos infraestrutura de servidor profissional
+            para garantir máximo desempenho, segurança e escalabilidade para seu sistema. Valores
+            sob consulta, conforme a demanda de cada projeto.
+          </p>
         </div>
       </div>
     </footer>
