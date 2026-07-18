@@ -140,7 +140,7 @@ export function Footer() {
           </p>
           <p>
             Nossa stack inclui Flutter, Laravel, Next.js, React, Node.js, TypeScript, PostgreSQL,
-            Redis, Docker, Firebase, OpenAI, AWS, Google Maps e Vercel. Oferecemos também
+            Redis, Docker, Firebase, OpenAI, AWS, Google Maps e Cloud. Oferecemos também
             consultoria completa em infraestrutura: Docker, cloud (AWS, Hetzner, Oracle Cloud,
             Azure, Digital Ocean), NGINX, CI/CD, deploy, monitoramento, backups, escalabilidade,
             load balance, firewall e SSL. Não vendemos hospedagem compartilhada — implantamos

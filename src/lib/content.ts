@@ -888,7 +888,7 @@ export const TECH_LOGOS = [
   "Firebase",
   "OpenAI",
   "AWS",
-  "Vercel",
+  "Cloud",
 ]
 
 export const STATS = [
@@ -993,7 +993,7 @@ export const TECHNOLOGIES = [
   { name: "Firebase", icon: "Flame", color: "#FFCA28" },
   { name: "OpenAI", icon: "Sparkles", color: "#10A37F" },
   { name: "Google Maps", icon: "MapPin", color: "#4285F4" },
-  { name: "Vercel", icon: "Triangle", color: "#FFFFFF" },
+  { name: "Cloud", icon: "Triangle", color: "#FFFFFF" },
   { name: "GitHub", icon: "Github", color: "#FFFFFF" },
   { name: "Linux", icon: "Terminal", color: "#FCC624" },
   { name: "NGINX", icon: "Server", color: "#009639" },
@@ -1075,7 +1075,7 @@ export const FAQ = [
   },
   {
     q: "A hospedagem está inclusa?",
-    a: "A hospedagem não está inclusa no valor do sistema, mas oferecemos consultoria completa para escolher e configurar a melhor infraestrutura (AWS, Hetzner, Oracle Cloud, Vercel) conforme a necessidade do projeto.",
+    a: "A hospedagem não está inclusa no valor do sistema, mas oferecemos consultoria completa para escolher e configurar a melhor infraestrutura (AWS, Hetzner, Oracle Cloud, Cloud) conforme a necessidade do projeto.",
   },
   {
     q: "Vocês configuram o servidor?",
