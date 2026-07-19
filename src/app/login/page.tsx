@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, ArrowRight, Mail, Lock, User, Eye, EyeOff, Loader2,
+  ArrowRight, Mail, Lock, User, Eye, EyeOff, Loader2,
   Check, ShieldCheck, Zap, Server, Rocket, Github, Chrome, Apple,
 } from 'lucide-react'
 import { Navbar } from '@/components/navbar'
@@ -56,15 +56,6 @@ export default function LoginPage() {
 
         <div className="container-x relative">
           <div className="max-w-md mx-auto">
-            {/* Back link */}
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-colors mb-8"
-            >
-              <ArrowLeft className="size-3.5" />
-              Voltar para o site
-            </Link>
-
             {/* Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
