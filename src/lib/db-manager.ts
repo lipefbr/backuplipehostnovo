@@ -245,17 +245,19 @@ export async function testPostgresConnection(
 
 /**
  * Get the external hostname for a database.
- * Currently uses the VPS public IP directly (works without DNS setup).
- * If user sets up *.db.lipe.host wildcard in Cloudflare (DNS only, NOT proxied),
- * we could switch to db-<slug>.db.lipe.host — but for now, IP is more reliable.
+ * Uses the subdomain db-<slug>.db.lipe.host.
+ *
+ * REQUIREMENT: User must add DNS wildcard *.db.lipe.host → VPS IP in Cloudflare
+ * with Proxy status = "DNS only" (gray cloud, NOT proxied/orange).
+ * If left as "Proxied" (orange), Cloudflare blocks TCP port 5432 and
+ * PostgreSQL connections will timeout.
  */
-export function getExternalHostname(_dbSlug: string): string {
-  return VPS_PUBLIC_IP
+export function getExternalHostname(dbSlug: string): string {
+  return `db-${dbSlug}${EXTERNAL_HOST_SUFFIX}`
 }
 
 /**
- * Get the subdomain that COULD be used (display only — shows what the
- * subdomain would be if user configures Cloudflare DNS properly).
+ * Get the subdomain (same as getExternalHostname — kept for backwards compat).
  */
 export function getExternalSubdomain(dbSlug: string): string {
   return `db-${dbSlug}${EXTERNAL_HOST_SUFFIX}`
@@ -263,19 +265,29 @@ export function getExternalSubdomain(dbSlug: string): string {
 
 /**
  * Get the full external connection string for a database.
- * Uses VPS public IP directly (works without DNS setup).
+ * Uses the subdomain db-<slug>.db.lipe.host (requires Cloudflare DNS only setup).
  * NOTE: For Prisma, append ?schema=public — for psql/pg, don't append it.
  */
 export function getExternalConnectionString(dbUser: string, dbPassword: string, dbSlug: string, dbName: string): string {
-  return `postgresql://${dbUser}:${dbPassword}@${VPS_PUBLIC_IP}:${PG_PORT}/${dbName}`
+  const host = getExternalHostname(dbSlug)
+  return `postgresql://${dbUser}:${dbPassword}@${host}:${PG_PORT}/${dbName}`
 }
 
 /**
  * Get the Prisma-compatible external connection string (with ?schema=public).
  * Use this for DATABASE_URL in .env when using Prisma ORM.
  */
-export function getPrismaConnectionString(dbUser: string, dbPassword: string, dbName: string): string {
-  return `postgresql://${dbUser}:${dbPassword}@${VPS_PUBLIC_IP}:${PG_PORT}/${dbName}?schema=public`
+export function getPrismaConnectionString(dbUser: string, dbPassword: string, dbSlug: string, dbName: string): string {
+  const host = getExternalHostname(dbSlug)
+  return `postgresql://${dbUser}:${dbPassword}@${host}:${PG_PORT}/${dbName}?schema=public`
+}
+
+/**
+ * Get the IP fallback connection string (used if subdomain DNS isn't configured).
+ * This always works regardless of DNS setup.
+ */
+export function getIpFallbackConnectionString(dbUser: string, dbPassword: string, dbName: string): string {
+  return `postgresql://${dbUser}:${dbPassword}@${VPS_PUBLIC_IP}:${PG_PORT}/${dbName}`
 }
 
 /**

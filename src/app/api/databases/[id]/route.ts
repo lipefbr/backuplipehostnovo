@@ -29,8 +29,8 @@ export async function GET(req: Request, { params }: Params) {
   const reveal = url.searchParams.get('reveal') === 'true'
 
   const password = reveal ? database.dbPassword : '*****'
-  const externalHost = '209.145.62.238'
   const subdomain = `db-${database.slug}.db.lipe.host`
+  const ipHost = '209.145.62.238'
 
   return NextResponse.json({
     database: {
@@ -39,19 +39,22 @@ export async function GET(req: Request, { params }: Params) {
       slug: database.slug,
       engine: database.engine,
       status: database.status,
-      // External host (IP) — works immediately for any client
-      host: externalHost,
-      subdomain, // for display — only works if user configures Cloudflare DNS only
+      // Subdomain host (requires Cloudflare DNS only — gray cloud, NOT proxied)
+      host: subdomain,
+      // IP fallback (always works, even without DNS setup)
+      ipHost,
       // Internal host (for apps deployed on the same VPS — faster)
       internalHost: '127.0.0.1',
       port: database.internalPort,
       dbName: database.dbName,
       dbUser: database.dbUser,
       dbPassword: password,
-      // Plain connection string (no ?schema=public — works with psql, pg, DBeaver)
-      connectionString: `postgresql://${database.dbUser}:${password}@${externalHost}:${database.internalPort}/${database.dbName}`,
+      // Plain connection string via subdomain (no ?schema=public — works with psql, pg, DBeaver)
+      connectionString: `postgresql://${database.dbUser}:${password}@${subdomain}:${database.internalPort}/${database.dbName}`,
       // Prisma connection string (with ?schema=public — for .env DATABASE_URL)
-      prismaConnectionString: `postgresql://${database.dbUser}:${password}@${externalHost}:${database.internalPort}/${database.dbName}?schema=public`,
+      prismaConnectionString: `postgresql://${database.dbUser}:${password}@${subdomain}:${database.internalPort}/${database.dbName}?schema=public`,
+      // IP fallback connection string (always works — use if subdomain doesn't resolve)
+      ipConnectionString: `postgresql://${database.dbUser}:${password}@${ipHost}:${database.internalPort}/${database.dbName}`,
       // Internal connection string (for apps on same VPS)
       internalConnectionString: `postgresql://${database.dbUser}:${password}@127.0.0.1:${database.internalPort}/${database.dbName}`,
       errorMessage: database.errorMessage,

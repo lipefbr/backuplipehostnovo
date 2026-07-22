@@ -18,12 +18,15 @@ interface DatabaseDetail {
   engine: string
   status: string
   host: string
+  ipHost?: string
   internalHost: string
   port: number
   dbName: string
   dbUser: string
   dbPassword: string
   connectionString: string
+  prismaConnectionString?: string
+  ipConnectionString?: string
   internalConnectionString: string
   errorMessage?: string | null
   createdAt: string
@@ -301,31 +304,81 @@ export default function DatabaseDetailPage({ params }: { params: Promise<{ id: s
             <Server className="size-4 text-blue-600" />
             Connection Strings
           </h2>
+
+          {/* DNS setup warning */}
+          <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
+            <strong>⚠️ Importante:</strong> Para que o subdomínio <code className="font-mono bg-amber-100 px-1 rounded">{database.host}</code> funcione,
+            você precisa adicionar no Cloudflare um registro DNS wildcard <code className="font-mono bg-amber-100 px-1 rounded">*.db</code> apontando
+            para <code className="font-mono bg-amber-100 px-1 rounded">209.145.62.238</code> com <strong>Proxy status = DNS only (nuvem CINZA, NÃO laranja)</strong>.
+            Se deixar laranja, o Cloudflare bloqueia a porta 5432. Enquanto não configurar, use a connection string de IP abaixo.
+          </div>
+
           <div className="space-y-3">
-            {/* External connection string */}
+            {/* Subdomain connection string (plain — for psql, pg, DBeaver) */}
             <div>
               <Label className="text-xs text-slate-600 mb-1.5 block">
-                Externa (apps fora da VPS) — <code className="font-mono">{database.host}</code>
+                🌐 Subdomínio (psql, DBeaver, pgAdmin) — <code className="font-mono">{database.host}</code>
               </Label>
               <div className="flex items-center gap-2">
                 <div className="flex-1 px-3 py-2 rounded-lg bg-slate-900 text-slate-100 text-xs font-mono overflow-x-auto">
                   {database.connectionString}
                 </div>
                 <button
-                  onClick={() => copyToClipboard('external', database.connectionString)}
+                  onClick={() => copyToClipboard('subdomain', database.connectionString)}
                   className="size-9 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 flex-shrink-0"
                 >
-                  {copiedField === 'external' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                  {copiedField === 'subdomain' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
                 </button>
               </div>
             </div>
-            {/* Internal connection string */}
+
+            {/* Prisma connection string (with ?schema=public) */}
+            {database.prismaConnectionString && (
+              <div>
+                <Label className="text-xs text-slate-600 mb-1.5 block">
+                  ⚡ Prisma (DATABASE_URL no .env) — <code className="font-mono">?schema=public</code>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 px-3 py-2 rounded-lg bg-slate-900 text-emerald-300 text-xs font-mono overflow-x-auto">
+                    {database.prismaConnectionString}
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard('prisma', database.prismaConnectionString!)}
+                    className="size-9 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 flex-shrink-0"
+                  >
+                    {copiedField === 'prisma' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* IP fallback connection string (always works) */}
+            {database.ipConnectionString && (
+              <div>
+                <Label className="text-xs text-slate-600 mb-1.5 block">
+                  🔢 IP direto (fallback — sempre funciona) — <code className="font-mono">{database.ipHost || '209.145.62.238'}</code>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 px-3 py-2 rounded-lg bg-slate-900 text-amber-300 text-xs font-mono overflow-x-auto">
+                    {database.ipConnectionString}
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard('ip', database.ipConnectionString!)}
+                    className="size-9 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 flex-shrink-0"
+                  >
+                    {copiedField === 'ip' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Internal connection string (for deploys on same VPS) */}
             <div>
               <Label className="text-xs text-slate-600 mb-1.5 block">
-                Interna (deploys na mesma VPS) — <code className="font-mono">{database.internalHost}</code>
+                🏠 Interna (deploys na mesma VPS — mais rápida) — <code className="font-mono">{database.internalHost}</code>
               </Label>
               <div className="flex items-center gap-2">
-                <div className="flex-1 px-3 py-2 rounded-lg bg-slate-900 text-slate-100 text-xs font-mono overflow-x-auto">
+                <div className="flex-1 px-3 py-2 rounded-lg bg-slate-900 text-blue-300 text-xs font-mono overflow-x-auto">
                   {database.internalConnectionString}
                 </div>
                 <button
@@ -336,6 +389,7 @@ export default function DatabaseDetailPage({ params }: { params: Promise<{ id: s
                 </button>
               </div>
             </div>
+
             {/* DB info */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div className="rounded-lg bg-slate-50 p-3">

@@ -20,11 +20,9 @@ export async function GET() {
   })
 
   // Don't expose the actual dbPassword in the response — only the connection string
-  // Use VPS public IP for external connections (works without DNS setup)
+  // Uses subdomain db-SLUG.db.lipe.host (requires Cloudflare DNS only setup)
   return NextResponse.json({
     databases: databases.map((d) => {
-      // IP works for everyone; subdomain only works if user configures Cloudflare DNS only
-      const externalHost = '209.145.62.238'
       const subdomain = `db-${d.slug}.db.lipe.host`
       return {
         id: d.id,
@@ -32,16 +30,19 @@ export async function GET() {
         slug: d.slug,
         engine: d.engine,
         status: d.status,
-        // External host (IP) — works immediately
-        host: externalHost,
-        subdomain, // for display purposes only
+        // Subdomain host (requires Cloudflare DNS only — gray cloud, NOT proxied)
+        host: subdomain,
+        // IP fallback (always works, even without DNS setup)
+        ipHost: '209.145.62.238',
         port: d.internalPort,
         dbName: d.dbName,
         dbUser: d.dbUser,
-        // Plain connection string (no ?schema=public — works with psql, pg, DBeaver, etc.)
-        connectionString: `postgresql://${d.dbUser}:*****@${externalHost}:${d.internalPort}/${d.dbName}`,
+        // Plain connection string via subdomain (no ?schema=public — works with psql, pg, DBeaver, etc.)
+        connectionString: `postgresql://${d.dbUser}:*****@${subdomain}:${d.internalPort}/${d.dbName}`,
         // Prisma connection string (with ?schema=public — for DATABASE_URL in .env)
-        prismaConnectionString: `postgresql://${d.dbUser}:*****@${externalHost}:${d.internalPort}/${d.dbName}?schema=public`,
+        prismaConnectionString: `postgresql://${d.dbUser}:*****@${subdomain}:${d.internalPort}/${d.dbName}?schema=public`,
+        // IP fallback connection string (always works — use if subdomain doesn't resolve)
+        ipConnectionString: `postgresql://${d.dbUser}:*****@209.145.62.238:${d.internalPort}/${d.dbName}`,
         // Internal connection string (for apps deployed on same VPS — faster, no network)
         internalConnectionString: `postgresql://${d.dbUser}:*****@127.0.0.1:${d.internalPort}/${d.dbName}`,
         hasPassword: !!d.dbPassword,
@@ -153,15 +154,17 @@ export async function POST(req: Request) {
         slug: updated.slug,
         engine: updated.engine,
         status: updated.status,
-        host: '209.145.62.238',
-        subdomain: `db-${updated.slug}.db.lipe.host`,
+        host: `db-${updated.slug}.db.lipe.host`,
+        ipHost: '209.145.62.238',
         port: updated.internalPort,
         dbName: updated.dbName,
         dbUser: updated.dbUser,
-        // Plain connection string (works with psql, pg, DBeaver, pgAdmin, etc.)
-        connectionString: `postgresql://${updated.dbUser}:${result.dbPassword}@209.145.62.238:${updated.internalPort}/${updated.dbName}`,
+        // Plain connection string via subdomain (works with psql, pg, DBeaver, pgAdmin)
+        connectionString: `postgresql://${updated.dbUser}:${result.dbPassword}@db-${updated.slug}.db.lipe.host:${updated.internalPort}/${updated.dbName}`,
         // Prisma connection string (use this in .env as DATABASE_URL when using Prisma ORM)
-        prismaConnectionString: `postgresql://${updated.dbUser}:${result.dbPassword}@209.145.62.238:${updated.internalPort}/${updated.dbName}?schema=public`,
+        prismaConnectionString: `postgresql://${updated.dbUser}:${result.dbPassword}@db-${updated.slug}.db.lipe.host:${updated.internalPort}/${updated.dbName}?schema=public`,
+        // IP fallback connection string (always works — use if subdomain doesn't resolve)
+        ipConnectionString: `postgresql://${updated.dbUser}:${result.dbPassword}@209.145.62.238:${updated.internalPort}/${updated.dbName}`,
         // Internal connection string (for apps deployed on the same VPS — faster)
         internalConnectionString: `postgresql://${updated.dbUser}:${result.dbPassword}@127.0.0.1:${updated.internalPort}/${updated.dbName}`,
         createdAt: updated.createdAt,
