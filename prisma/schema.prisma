@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,19 +11,176 @@ datasource db {
 }
 
 model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          String    @default("USER") // "USER" | "ADMIN"
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  projects      Project[]
+  orders        Order[]
+  deploys       Deploy[]
+  tickets       Ticket[]
+  databases     Database[]
+}
+
+model System {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  tagline         String
+  category        String
+  shortDescription String
+  longDescription String
+  technologies    String   // JSON string array
+  highlights      String   // JSON string array
+  startingPrice   String?
+  status          String   @default("disponivel") // "disponivel" | "sob-consulta"
+  featured        Boolean  @default(false)
+  accentColor     String   @default("#3b82f6")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  features        Feature[]
+  screenshots     Screenshot[]
+  benefits        Benefit[]
+  plans           Plan[]
+  faq             Faq[]
+  orders          Order[]
+}
+
+model Feature {
+  id          String  @id @default(cuid())
+  systemId    String
+  system      System  @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  sortOrder   Int     @default(0)
+}
+
+model Screenshot {
+  id        String @id @default(cuid())
+  systemId  String
+  system    System @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  label     String
+  gradient  String
+  sortOrder Int    @default(0)
+}
+
+model Benefit {
+  id        String @id @default(cuid())
+  systemId  String
+  system    System @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  text      String
+  sortOrder Int    @default(0)
+}
+
+model Plan {
+  id          String   @id @default(cuid())
+  systemId    String
+  system      System   @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  name        String
+  price       String
+  period      String?
+  description String
+  features    String   // JSON string array
+  highlighted Boolean  @default(false)
+  sortOrder   Int      @default(0)
+}
+
+model Faq {
+  id        String @id @default(cuid())
+  systemId  String
+  system    System @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  question  String
+  answer    String
+  sortOrder Int    @default(0)
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  status      String   @default("pending") // "pending" | "in_progress" | "completed" | "cancelled"
+  budget      String?
+  deadline    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Deploy {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  repoUrl       String
+  branch        String   @default("main")
+  framework     String?  // nextjs | vite | cra | static | etc (auto-detected)
+  buildCommand  String?
+  outputDir     String?
+  installCommand String?
+  status        String   @default("queued") // queued | building | ready | error
+  buildLog      String?
+  previewUrl    String?
+  errorMessage  String?
+  envVars       String   @default("[]") // JSON array of {key, value}
+  autoUpdate    Boolean  @default(false) // auto redeploy on git push
+  customDomain  String?  // user's custom domain (e.g. meusite.com.br)
+  lastCommitSha String?  // last deployed git commit
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tickets       Ticket[]
+}
+
+model Ticket {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deployId    String?
+  deploy      Deploy?  @relation(fields: [deployId], references: [id], onDelete: SetNull)
+  subject     String
+  message     String
+  status      String   @default("open") // open | in_progress | resolved | closed
+  priority    String   @default("normal") // low | normal | high | urgent
+  response    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Order {
   id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  systemId  String?
+  system    System?  @relation(fields: [systemId], references: [id], onDelete: SetNull)
+  planName  String?
+  price     String?
+  status    String   @default("pending") // "pending" | "paid" | "cancelled" | "refunded"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Database {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String   // user-friendly name
+  slug             String   // sanitized name used as db name + username
+  engine           String   @default("postgresql") // "postgresql" | "mysql" | "redis"
+  status           String   @default("active") // "creating" | "active" | "error" | "deleting"
+  // Internal connection (for apps deployed on the same VPS)
+  internalHost     String   @default("127.0.0.1")
+  internalPort     Int      @default(5432)
+  dbName           String   // actual database name in PostgreSQL
+  dbUser           String   // actual PostgreSQL username
+  dbPassword       String   // actual PostgreSQL password (kept internal)
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([userId, slug])
+  @@index([userId])
 }

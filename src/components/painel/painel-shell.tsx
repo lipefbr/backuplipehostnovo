@@ -1,0 +1,304 @@
+'use client'
+
+import * as React from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname, useRouter } from 'next/navigation'
+import { signOut, useSession } from 'next-auth/react'
+import {
+  LayoutDashboard, ShoppingCart, FolderKanban, CreditCard,
+  LifeBuoy, LogOut, Search, Menu, X, ExternalLink,
+  Server, Cpu, Activity, TrendingUp, Clock, CheckCircle2,
+  AlertCircle, ArrowUpRight, Wallet, Zap, Rocket,
+  Database, Store, FileText, Clock as ClockIcon,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { NotificationsBell } from '@/components/painel/notifications-bell'
+
+const navItems = [
+  { href: '/painel', label: 'Visão Geral', icon: LayoutDashboard },
+  { href: '/painel/projetos', label: 'Meus Projetos', icon: FolderKanban },
+  { href: '/painel/sistemas', label: 'Sistemas', icon: ShoppingCart },
+  { href: '/painel/bancos', label: 'Banco de Dados', icon: Database },
+  { href: '/painel/loja', label: 'Loja', icon: Store },
+  { href: '/painel/financeiro', label: 'Financeiro', icon: Wallet },
+  { href: '/painel/suporte', label: 'Suporte', icon: LifeBuoy },
+]
+
+interface ShellProps {
+  children: React.ReactNode
+}
+
+export function PainelShell({ children }: ShellProps) {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const pathname = usePathname()
+  const [mobileOpen, setMobileOpen] = React.useState(false)
+
+  // Admin redirect from /painel to /admin (client-side, just for UX)
+  React.useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN' && pathname === '/painel') {
+      router.push('/admin')
+    }
+  }, [status, session, pathname, router])
+
+  // NOTE: Auth is handled by middleware (server-side cookie check).
+  // If we reach here, the user IS authenticated.
+  // useSession() might return 'unauthenticated' due to Cloudflare proxy
+  // timing issues, but we trust the middleware — DO NOT redirect to /login.
+  // Just use fallback data if session isn't loaded yet.
+
+  // Show spinner only on first load (brief)
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="size-8 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin mx-auto mb-3" />
+          <p className="text-sm text-slate-500">Carregando painel...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Use session data if available, otherwise use fallback
+  // (middleware verified the cookie exists, so user IS logged in)
+
+  const userName = session?.user?.name ?? 'Usuário'
+  const userEmail = session?.user?.email ?? ''
+  const initials = userName
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+
+  // Determine current page title from path
+  const currentPage = navItems.find((n) => n.href === pathname)?.label ?? 'Painel'
+
+  return (
+    <div className="theme-light min-h-screen flex bg-slate-50">
+      {/* ===== Fixed sidebar (desktop) — black, full height ===== */}
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-shrink-0 bg-[#0a0a0a] border-r border-white/8 flex-col z-40">
+        {/* Logo — centralized at top */}
+        <div className="h-20 flex items-center justify-center border-b border-white/8 px-6">
+          <Link href="/" className="flex items-center justify-center group" aria-label="LipeHost">
+            <Image
+              src="/lipehost-logo-navbar.png"
+              alt="LipeHost"
+              width={140}
+              height={36}
+              priority
+              className="h-9 w-auto opacity-90 group-hover:opacity-100 transition-opacity"
+            />
+          </Link>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/painel' && pathname.startsWith(item.href))
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                  isActive
+                    ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                    : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                )}
+              >
+                <item.icon className="size-4" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="px-3 py-4 border-t border-white/8 space-y-1">
+          <Link
+            href="/"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all"
+          >
+            <ExternalLink className="size-4" />
+            Voltar ao site
+          </Link>
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400/80 hover:text-red-300 hover:bg-red-500/10 transition-all"
+          >
+            <LogOut className="size-4" />
+            Sair
+          </button>
+        </div>
+      </aside>
+
+      {/* ===== Mobile sidebar overlay ===== */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+      <aside
+        className={cn(
+          'lg:hidden fixed left-0 top-0 bottom-0 z-50 w-72 bg-[#0a0a0a] border-r border-white/8 transition-transform duration-300',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <div className="h-20 flex items-center justify-between px-6 border-b border-white/8">
+          <Link href="/" className="flex items-center" aria-label="LipeHost" onClick={() => setMobileOpen(false)}>
+            <Image
+              src="/lipehost-logo-navbar.png"
+              alt="LipeHost"
+              width={140}
+              height={36}
+              className="h-9 w-auto opacity-90"
+            />
+          </Link>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="text-white/60 hover:text-white"
+            aria-label="Fechar menu"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/painel' && pathname.startsWith(item.href))
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                  isActive
+                    ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                    : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                )}
+              >
+                <item.icon className="size-4" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
+        <div className="px-3 py-4 border-t border-white/8 space-y-1">
+          <Link
+            href="/"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all"
+            onClick={() => setMobileOpen(false)}
+          >
+            <ExternalLink className="size-4" />
+            Voltar ao site
+          </Link>
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400/80 hover:text-red-300 hover:bg-red-500/10 transition-all"
+          >
+            <LogOut className="size-4" />
+            Sair
+          </button>
+        </div>
+      </aside>
+
+      {/* ===== Main content — scrollable, white bg, left margin for fixed sidebar ===== */}
+      <div className="flex-1 lg:ml-64 flex flex-col min-w-0">
+        {/* Top bar (sticky inside scroll area) */}
+        <header className="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-slate-200 bg-white sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden text-slate-600 hover:text-slate-900"
+              aria-label="Abrir menu"
+            >
+              <Menu className="size-5" />
+            </button>
+            <div className="hidden sm:flex items-center gap-2 text-sm">
+              <span className="text-slate-400">Painel</span>
+              <span className="text-slate-300">/</span>
+              <span className="text-slate-900 font-medium">{currentPage}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar..."
+                className="h-9 w-64 pl-9 pr-3 rounded-lg bg-slate-100 border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500/50"
+              />
+            </div>
+            <NotificationsBell theme="light" />
+            <Link
+              href="/painel/perfil"
+              className="flex items-center gap-2.5 pl-3 border-l border-slate-200"
+            >
+              <div className="size-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                {initials}
+              </div>
+              <div className="hidden sm:block">
+                <div className="text-xs font-semibold text-slate-900 leading-tight">{userName}</div>
+                <div className="text-[10px] text-slate-500 leading-tight">{userEmail}</div>
+              </div>
+            </Link>
+          </div>
+        </header>
+
+        {/* Page content — scrolls independently of sidebar */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-slate-50">
+          {children}
+        </main>
+      </div>
+    </div>
+  )
+}
+
+// Helper card component
+export function StatCard({
+  title,
+  value,
+  icon: Icon,
+  trend,
+  trendValue,
+  color = 'blue',
+}: {
+  title: string
+  value: string | number
+  icon: React.ComponentType<{ className?: string }>
+  trend?: 'up' | 'down' | 'neutral'
+  trendValue?: string
+  color?: 'blue' | 'purple' | 'emerald' | 'amber'
+}) {
+  const colorClasses = {
+    blue: 'bg-blue-50 border-blue-200 text-blue-600',
+    purple: 'bg-purple-50 border-purple-200 text-purple-600',
+    emerald: 'bg-emerald-50 border-emerald-200 text-emerald-600',
+    amber: 'bg-amber-50 border-amber-200 text-amber-600',
+  }
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 hover:border-slate-300 transition-colors">
+      <div className="flex items-start justify-between mb-3">
+        <div className={cn('size-10 rounded-lg border flex items-center justify-center', colorClasses[color])}>
+          <Icon className="size-5" />
+        </div>
+        {trend === 'up' && (
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+            <TrendingUp className="size-3" />
+            {trendValue}
+          </span>
+        )}
+        {trend === 'neutral' && (
+          <span className="text-xs text-slate-400">{trendValue}</span>
+        )}
+      </div>
+      <div className="text-2xl font-extrabold text-slate-900 tracking-tight">{value}</div>
+      <div className="text-xs text-slate-500 mt-0.5">{title}</div>
+    </div>
+  )
+}
