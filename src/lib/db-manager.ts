@@ -149,9 +149,10 @@ export async function createPostgresDatabase(
 
     // Step 4: Connect to the new database and grant schema privileges
     // (need to run psql with -d dbName for this)
+    // Also grant SELECT on pg_stat_user_tables so listTables() works
     const env = { ...CLEAN_ENV, PGPASSWORD: PG_ADMIN_PASS }
     const escapedDb = dbName.replace(/'/g, "'\\''")
-    const grantCmd = `psql -h ${host} -p ${port} -U ${PG_ADMIN_USER} -d "${escapedDb}" -v ON_ERROR_STOP=1 -c "GRANT ALL ON SCHEMA public TO \\"${dbUser}\\"; GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \\"${dbUser}\\"; GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \\"${dbUser}\\";"`
+    const grantCmd = `psql -h ${host} -p ${port} -U ${PG_ADMIN_USER} -d "${escapedDb}" -v ON_ERROR_STOP=1 -c "GRANT ALL ON SCHEMA public TO \\"${dbUser}\\"; GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \\"${dbUser}\\"; GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \\"${dbUser}\\"; GRANT SELECT ON pg_stat_user_tables TO \\"${dbUser}\\";"`
     await execAsync(grantCmd, { env, timeout: 30000, maxBuffer: 1024 * 1024 })
 
     // Step 5: Verify by connecting as the new user
@@ -300,7 +301,10 @@ export function getInternalConnectionString(dbUser: string, dbPassword: string, 
 
 /**
  * List all tables in a PostgreSQL database.
- * Returns array of { name, rows_count, size }.
+ * Returns array of { name, rowCount, size }.
+ *
+ * Uses pg_stat_user_tables for accurate row counts (n_live_tup is there,
+ * NOT in pg_class — that was a bug in the previous version).
  */
 export async function listTables(
   dbUser: string,
@@ -309,8 +313,8 @@ export async function listTables(
 ): Promise<{ success: boolean; tables?: Array<{ name: string; rowCount: number; size: string }>; error?: string }> {
   try {
     const env = { ...CLEAN_ENV, PGPASSWORD: dbPassword }
-    // Query to list tables with row count and size
-    const sql = `SELECT relname AS name, n_live_tup AS row_count, pg_size_pretty(pg_total_relation_size(C.oid)) AS size FROM pg_class C LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace) WHERE nspname = 'public' AND relkind = 'r' ORDER BY relname;`
+    // Query to list tables with row count (from pg_stat_user_tables) and size
+    const sql = `SELECT c.relname AS name, COALESCE(s.n_live_tup, 0) AS row_count, pg_size_pretty(pg_total_relation_size(c.oid)) AS size FROM pg_class c LEFT JOIN pg_namespace n ON (n.oid = c.relnamespace) LEFT JOIN pg_stat_user_tables s ON (s.relid = c.oid) WHERE n.nspname = 'public' AND c.relkind = 'r' ORDER BY c.relname;`
     const escaped = sql.replace(/'/g, "'\\''")
     const cmd = `psql -h ${PG_HOST} -p ${PG_PORT} -U ${dbUser} -d ${dbName} -t -A -F '|' -c '${escaped}'`
     const { stdout } = await execAsync(cmd, { env, timeout: 30000, maxBuffer: 5 * 1024 * 1024 })

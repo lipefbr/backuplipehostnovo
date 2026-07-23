@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { executeRealDeploy, configureNginxForDeploy, removeNginxHostname, getPortForDeploy } from '@/lib/deploy-executor'
+import { executeRealDeploy, configureNginxForDeploy, removeNginxHostname, configureNginxForCustomDomain, getPortForDeploy } from '@/lib/deploy-executor'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -209,6 +209,9 @@ export async function PATCH(req: Request, { params }: Params) {
     // Track whether preview URL changed so we can reconfigure nginx after
     const previewUrlChanged = typeof body.previewUrl === 'string' && body.previewUrl.trim() !== ''
 
+    // Track whether custom domain changed
+    const customDomainChanged = typeof body.customDomain === 'string'
+
     const updated = await db.deploy.update({
       where: { id },
       data: update,
@@ -231,6 +234,16 @@ export async function PATCH(req: Request, { params }: Params) {
           })
         }, 1500)
       }
+    }
+
+    // If custom domain changed, reconfigure nginx for the custom domain
+    // This adds/removes a server block in nginx for the custom domain (e.g. meusite.com.br)
+    if (customDomainChanged) {
+      const port = getPortForDeploy(deploy.id)
+      const newCustomDomain = (update.customDomain as string | null) ?? null
+      configureNginxForCustomDomain(deploy.id, newCustomDomain, port).catch((e) => {
+        console.error('Failed to configure nginx for custom domain:', e)
+      })
     }
 
     // If redeploying, execute REAL deploy in background

@@ -643,3 +643,115 @@ export async function removeNginxHostname(hostname: string): Promise<void> {
     console.error('removeNginxHostname error:', error)
   }
 }
+
+/**
+ * Configure nginx to proxy a CUSTOM DOMAIN to the deploy's port.
+ * This is separate from configureNginxForDeploy (which handles preview subdomains).
+ *
+ * - If customDomain is empty/null → REMOVE the custom domain server block
+ * - If customDomain is set → ADD/UPDATE a server block for that domain
+ *
+ * The custom domain must NOT end with .lipe.host (that would conflict with
+ * the preview subdomain handling). It should be a real external domain like
+ * meusite.com.br that the user has pointed to the VPS IP via DNS.
+ */
+export async function configureNginxForCustomDomain(
+  deployId: string,
+  customDomain: string | null,
+  port: number
+): Promise<void> {
+  try {
+    const configPath = '/etc/nginx/sites-available/lipehost'
+    const { readFileSync, writeFileSync } = await import('fs')
+    let config = ''
+    try {
+      config = readFileSync(configPath, 'utf8')
+    } catch {
+      config = ''
+    }
+
+    // If customDomain is null/empty → remove any existing custom domain block for this deploy
+    if (!customDomain) {
+      // Find and remove server blocks tagged with "# CustomDomain: deployId"
+      const tagRegex = new RegExp(
+        `# CustomDomain: ${deployId}\\nserver\\s*\\{[\\s\\S]*?\\n\\}\\n*`,
+        'g'
+      )
+      config = config.replace(tagRegex, '')
+      writeFileSync(configPath, config)
+      try {
+        await runExec('nginx -t 2>&1')
+        await runExec('systemctl reload nginx')
+      } catch (e) {
+        console.error('nginx reload after custom domain remove failed:', e)
+      }
+      return
+    }
+
+    const hostname = customDomain.toLowerCase().trim()
+
+    // Build the server block for this custom domain
+    // Tag it with the deployId so we can find/remove it later
+    const serverBlock = `# CustomDomain: ${deployId}
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${hostname};
+    client_max_body_size 50M;
+    location / {
+        proxy_pass http://127.0.0.1:${port};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_cache_bypass $http_upgrade;
+    }
+}`
+
+    // Check if there's already a block tagged with this deployId
+    const tagRegex = new RegExp(
+      `(# CustomDomain: ${deployId}\\nserver\\s*\\{)[\\s\\S]*?(\\n\\})`,
+      'g'
+    )
+    if (tagRegex.test(config)) {
+      // Update the existing block (replace what's between the tag and the closing brace)
+      config = config.replace(tagRegex, `$1\n    listen 80;\n    listen [::]:80;\n    server_name ${hostname};\n    client_max_body_size 50M;\n    location / {\n        proxy_pass http://127.0.0.1:${port};\n        proxy_http_version 1.1;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto https;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection "upgrade";\n        proxy_cache_bypass $http_upgrade;\n    }$2`)
+    } else {
+      // Check if this hostname is already configured (without our tag — maybe manually)
+      const hostnameRegex = new RegExp(`server_name\\s+${hostname.replace(/\./g, '\\.')}\\s*;`)
+      if (hostnameRegex.test(config)) {
+        // Update the port in the existing block
+        const blockRegex = new RegExp(
+          `(server\\s*\\{[^}]*?server_name\\s+${hostname.replace(/\./g, '\\.')}\\s*;[^}]*?proxy_pass\\s+http://127\\.0\\.0\\.1:)\\d+`,
+          's'
+        )
+        config = config.replace(blockRegex, `$1${port}`)
+      } else {
+        // Insert the new server block BEFORE the wildcard *.lipe.host block
+        const wildcardMatch = config.match(/# Wildcard for[^\n]*\nserver\s*\{/)
+        if (wildcardMatch && wildcardMatch.index !== undefined) {
+          const insertPos = wildcardMatch.index
+          config = config.slice(0, insertPos) + serverBlock + '\n\n' + config.slice(insertPos)
+        } else {
+          config = config.trimEnd() + '\n\n' + serverBlock + '\n'
+        }
+      }
+    }
+
+    writeFileSync(configPath, config)
+
+    try {
+      await runExec(`ln -sf ${configPath} /etc/nginx/sites-enabled/lipehost`)
+    } catch {
+      // ignore
+    }
+
+    await runExec('nginx -t 2>&1')
+    await runExec('systemctl reload nginx')
+  } catch (error) {
+    console.error('configureNginxForCustomDomain error:', error)
+  }
+}

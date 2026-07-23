@@ -438,7 +438,7 @@ export default function DatabaseDetailPage({ params }: { params: Promise<{ id: s
                   variant="ghost"
                   size="sm"
                   onClick={() => exportData()}
-                  className="text-slate-600"
+                  className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 font-semibold"
                 >
                   <Download className="size-3.5" />
                   Exportar tudo
@@ -447,7 +447,7 @@ export default function DatabaseDetailPage({ params }: { params: Promise<{ id: s
                   variant="ghost"
                   size="sm"
                   onClick={() => setActiveTab('io')}
-                  className="text-slate-600"
+                  className="text-blue-700 hover:text-blue-800 hover:bg-blue-50 font-semibold"
                 >
                   <Upload className="size-3.5" />
                   Importar JSON
