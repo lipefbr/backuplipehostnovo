@@ -12,6 +12,7 @@ import { PainelShell } from '@/components/painel/painel-shell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { ChatMessageRenderer } from '@/components/chat/chat-message-renderer'
 
 interface ChatMessage {
   id: string
@@ -309,12 +310,16 @@ export default function ChatPage() {
                   />
                 )}
                 <div className={cn(
-                  'rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap',
+                  'rounded-2xl px-4 py-3',
                   msg.role === 'user'
                     ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-tr-sm'
                     : 'bg-white border border-slate-200 text-slate-900 rounded-tl-sm shadow-sm'
                 )}>
-                  {msg.content}
+                  {msg.role === 'user' ? (
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  ) : (
+                    <ChatMessageRenderer content={msg.content} />
+                  )}
                   {/* Render deploy links as clickable buttons */}
                   {msg.deployLinks && msg.deployLinks.length > 0 && (
                     <div className="mt-3 space-y-1.5">
