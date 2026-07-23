@@ -10,7 +10,7 @@ import {
   LifeBuoy, LogOut, Search, Menu, X, ExternalLink,
   Server, Cpu, Activity, TrendingUp, Clock, CheckCircle2,
   AlertCircle, ArrowUpRight, Wallet, Zap, Rocket,
-  Database, Store, FileText, Clock as ClockIcon,
+  Database, Store, FileText, Clock as ClockIcon, Crown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,7 @@ import { NotificationsBell } from '@/components/painel/notifications-bell'
 const navItems = [
   { href: '/painel', label: 'Visão Geral', icon: LayoutDashboard },
   { href: '/painel/projetos', label: 'Meus Projetos', icon: FolderKanban },
+  { href: '/painel/planos', label: 'Planos', icon: Crown },
   { href: '/painel/sistemas', label: 'Sistemas', icon: ShoppingCart },
   { href: '/painel/bancos', label: 'Banco de Dados', icon: Database },
   { href: '/painel/loja', label: 'Loja', icon: Store },
