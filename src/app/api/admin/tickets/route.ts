@@ -13,20 +13,24 @@ export async function GET() {
   const tickets = await db.ticket.findMany({
     orderBy: { createdAt: 'desc' },
     take: 100,
-    include: { user: { select: { name: true, email: true } } },
+    include: {
+      user: { select: { name: true, email: true } },
+      _count: { select: { messages: true } },
+    },
   })
 
   return NextResponse.json({
     tickets: tickets.map((t) => ({
       id: t.id,
+      ticketNumber: t.ticketNumber,
       subject: t.subject,
       message: t.message,
       status: t.status,
       priority: t.priority,
       response: t.response,
       createdAt: t.createdAt,
-      updatedAt: t.updatedAt,
       user: t.user,
+      messagesCount: t._count.messages,
     })),
   })
 }

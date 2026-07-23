@@ -40,6 +40,7 @@ model User {
   orders        Order[]
   deploys       Deploy[]
   tickets       Ticket[]
+  ticketMessages TicketMessage[]
   databases     Database[]
   subscriptions Subscription[]
   payments      Payment[]
@@ -236,6 +237,7 @@ model Deploy {
 
 model Ticket {
   id          String   @id @default(cuid())
+  ticketNumber Int    @default(0) // set manually in API (max+1)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   deployId    String?
@@ -245,8 +247,26 @@ model Ticket {
   status      String   @default("open") // open | in_progress | resolved | closed
   priority    String   @default("normal") // low | normal | high | urgent
   response    String?
+  messages    TicketMessage[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model TicketMessage {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  author      String   @default("user") // "user" | "admin" | "ai"
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
 }
 
 model Order {
