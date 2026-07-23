@@ -268,7 +268,6 @@ export async function createCardPreference(params: {
       payer: params.customerId ? { customer_id: params.customerId } : undefined,
       external_reference: params.externalReference,
       payment_methods: {
-        // Exclude boleto and ATM — only allow credit_card and pix
         excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }],
         installments: 12,
       },

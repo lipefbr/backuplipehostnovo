@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SessionProvider } from "@/components/session-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -16,11 +17,11 @@ const siteUrl = "https://lipe.host";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "LIPE.HOST — Desenvolvimento de Sistemas, Aplicativos, SaaS e IA",
-    template: "%s · LIPE.HOST",
+    default: "LipeHost — Desenvolvimento de Sistemas, Aplicativos, SaaS e IA",
+    template: "%s · LipeHost",
   },
   description:
-    "LIPE.HOST (lipehost) — empresa de desenvolvimento de software. Criamos aplicativos mobile, sistemas web, marketplaces, CRMs, plataformas SaaS e soluções com Inteligência Artificial. Consultoria em infraestrutura, DevOps, Docker, cloud e escalabilidade.",
+    "LipeHost (lipehost) — empresa de desenvolvimento de software. Criamos aplicativos mobile, sistemas web, marketplaces, CRMs, plataformas SaaS e soluções com Inteligência Artificial. Consultoria em infraestrutura, DevOps, Docker, cloud e escalabilidade.",
   keywords: [
     "lipehost",
     "lipe.host",
@@ -62,10 +63,10 @@ export const metadata: Metadata = {
     "empresa de tecnologia brasil",
     "software house",
   ],
-  authors: [{ name: "LIPE.HOST", url: siteUrl }],
-  creator: "LIPE.HOST",
-  publisher: "LIPE.HOST",
-  applicationName: "LIPE.HOST",
+  authors: [{ name: "LipeHost", url: siteUrl }],
+  creator: "LipeHost",
+  publisher: "LipeHost",
+  applicationName: "LipeHost",
   category: "Technology",
   alternates: {
     canonical: "/",
@@ -77,8 +78,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pt_BR",
     url: siteUrl,
-    siteName: "LIPE.HOST",
-    title: "LIPE.HOST — Sistemas, Aplicativos, SaaS e IA para Empresas",
+    siteName: "LipeHost",
+    title: "LipeHost — Sistemas, Aplicativos, SaaS e IA para Empresas",
     description:
       "Criamos sistemas que aceleram empresas. Aplicativos mobile, sistemas web, marketplaces, CRMs, plataformas SaaS, IA e consultoria em infraestrutura profissional.",
     images: [
@@ -86,7 +87,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "LIPE.HOST — Sistemas, Aplicativos e IA para Empresas",
+        alt: "LipeHost — Sistemas, Aplicativos e IA para Empresas",
         type: "image/png",
       },
     ],
@@ -95,7 +96,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@lipehost",
     creator: "@lipehost",
-    title: "LIPE.HOST — Sistemas, Aplicativos, SaaS e IA para Empresas",
+    title: "LipeHost — Sistemas, Aplicativos, SaaS e IA para Empresas",
     description:
       "Criamos sistemas que aceleram empresas. Aplicativos, SaaS, marketplaces, IA e infraestrutura profissional.",
     images: ["/og-image.png"],
@@ -162,7 +163,7 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'Organization',
               '@id': `${siteUrl}/#organization`,
-              name: 'LIPE.HOST',
+              name: 'LipeHost',
               alternateName: 'lipehost',
               url: siteUrl,
               logo: `${siteUrl}/lipehost-logo.png`,
@@ -200,7 +201,7 @@ export default function RootLayout({
               '@type': 'WebSite',
               '@id': `${siteUrl}/#website`,
               url: siteUrl,
-              name: 'LIPE.HOST',
+              name: 'LipeHost',
               alternateName: 'lipehost',
               description:
                 'Desenvolvimento de sistemas, aplicativos, SaaS e inteligência artificial para empresas.',
@@ -226,7 +227,7 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'ProfessionalService',
               '@id': `${siteUrl}/#service`,
-              name: 'LIPE.HOST',
+              name: 'LipeHost',
               alternateName: 'lipehost',
               description:
                 'Desenvolvimento de sistemas personalizados, aplicativos mobile, SaaS, marketplaces e inteligência artificial.',
@@ -257,8 +258,10 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          {children}
-          <Toaster />
+          <SessionProvider>
+            {children}
+            <Toaster />
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

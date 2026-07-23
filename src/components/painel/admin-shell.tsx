@@ -10,7 +10,7 @@ import {
   LogOut, Search, Menu, X, ExternalLink,
   Crown, ShoppingCart, TrendingUp, FolderKanban,
   Plus, Pencil, Trash2, Eye, EyeOff, Save, XCircle,
-  Package, Receipt,
+  Package, Receipt, Ticket,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,7 @@ const adminNav = [
   { href: '/admin/sistemas', label: 'Sistemas', icon: Boxes },
   { href: '/admin/projetos', label: 'Projetos', icon: FolderKanban },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
+  { href: '/admin/tickets', label: 'Tickets', icon: Ticket },
   { href: '/admin/planos', label: 'Planos', icon: Package },
   { href: '/admin/pagamentos', label: 'Pagamentos', icon: CreditCard },
   { href: '/admin/pedidos', label: 'Pedidos', icon: ShoppingCart },

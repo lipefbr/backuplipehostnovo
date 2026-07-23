@@ -384,8 +384,8 @@ function SubscribeModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 bg-white">
+      <div className="bg-white text-slate-900 rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 bg-white text-slate-900">
           <div>
             <h2 className="text-lg font-bold text-slate-900">
               {result ? 'Pagamento gerado!' : `Assinar ${plan.name}`}

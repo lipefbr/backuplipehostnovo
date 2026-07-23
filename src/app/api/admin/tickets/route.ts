@@ -10,23 +10,23 @@ export async function GET() {
     return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
   }
 
-  const deploys = await db.deploy.findMany({
+  const tickets = await db.ticket.findMany({
     orderBy: { createdAt: 'desc' },
     take: 100,
     include: { user: { select: { name: true, email: true } } },
   })
 
   return NextResponse.json({
-    deploys: deploys.map((d) => ({
-      id: d.id,
-      name: d.name,
-      status: d.status,
-      framework: d.framework,
-      repoUrl: d.repoUrl,
-      previewUrl: d.previewUrl,
-      customDomain: d.customDomain,
-      createdAt: d.createdAt,
-      user: d.user,
+    tickets: tickets.map((t) => ({
+      id: t.id,
+      subject: t.subject,
+      message: t.message,
+      status: t.status,
+      priority: t.priority,
+      response: t.response,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      user: t.user,
     })),
   })
 }

@@ -12,6 +12,8 @@ const DEFAULTS: Record<string, string> = {
   'mp_client_secret': 'sdKJjtN0oJvqZupPq4VYeIFbxNdat5bz',
   'mp_sandbox': 'true',
   'cron_secret': 'lipehost-cron-secret-2026',
+  'support_whatsapp': '5511999999999',
+  'support_email': 'contato@lipe.host',
 }
 
 /**
@@ -59,6 +61,8 @@ export async function getMercadoPagoSettings() {
     'mp_client_secret',
     'mp_sandbox',
     'cron_secret',
+    'support_whatsapp',
+    'support_email',
   ])
 }
 

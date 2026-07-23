@@ -15,6 +15,8 @@ export default function AdminConfigPage() {
     mp_client_secret: '',
     mp_sandbox: 'true',
     cron_secret: '',
+    support_whatsapp: '',
+    support_email: '',
   })
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
@@ -194,6 +196,27 @@ export default function AdminConfigPage() {
             <p className="text-xs text-slate-400 mt-1">
               URL do cron: <code className="font-mono bg-slate-100 px-1 rounded">/api/payments/cron?token=TOKEN</code>
             </p>
+          </div>
+
+          {/* Support contact */}
+          <div className="pt-4 border-t border-slate-100">
+            <Label className="text-xs text-slate-700 mb-1.5 block">WhatsApp de Suporte (com DDI)</Label>
+            <Input
+              value={settings.support_whatsapp}
+              onChange={(e) => setSettings({ ...settings, support_whatsapp: e.target.value })}
+              className="h-10 font-mono text-sm text-slate-900"
+              placeholder="5511999999999"
+            />
+            <p className="text-xs text-slate-400 mt-1">Formato: 55 + DDD + número (ex: 5511987654321)</p>
+          </div>
+          <div>
+            <Label className="text-xs text-slate-700 mb-1.5 block">E-mail de Suporte</Label>
+            <Input
+              value={settings.support_email}
+              onChange={(e) => setSettings({ ...settings, support_email: e.target.value })}
+              className="h-10 text-sm text-slate-900"
+              placeholder="contato@lipe.host"
+            />
           </div>
 
           <div className="flex items-center gap-3 pt-2">

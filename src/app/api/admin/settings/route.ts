@@ -36,6 +36,7 @@ export async function PATCH(req: Request) {
     const allowedKeys = [
       'mp_access_token', 'mp_public_key', 'mp_client_id',
       'mp_client_secret', 'mp_sandbox', 'cron_secret',
+      'support_whatsapp', 'support_email',
     ]
 
     for (const key of allowedKeys) {
