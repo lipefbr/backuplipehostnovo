@@ -16,7 +16,21 @@ model User {
   email         String    @unique
   passwordHash  String
   role          String    @default("USER") // "USER" | "ADMIN"
-  avatar        String?
+  avatar        String?   // URL da foto de perfil (pode ser data URL ou URL externa)
+  username      String?   // @username (display name público, opcional)
+  phone         String?   // telefone (opcional)
+  // Endereço (opcional)
+  addressStreet String?
+  addressNumber String?
+  addressComplement String?
+  addressNeighborhood String?
+  addressCity   String?
+  addressState  String?   // UF (2 letras)
+  addressZip    String?   // CEP
+  // Assinatura
+  plan          String    @default("FREE") // "FREE" | "STARTER" | "PRO" | "ENTERPRISE"
+  planStatus    String    @default("active") // "active" | "canceled" | "past_due" | "trialing"
+  planRenewalDate DateTime? // data de renovação
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   projects      Project[]
