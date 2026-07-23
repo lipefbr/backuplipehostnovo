@@ -2,13 +2,74 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { SYSTEMS } from '@/lib/content'
 
 const GLM_API_KEY = 'd4ec7973ecb1429ead4718dc20c80f9d.Qw46w4BTI6GMmDqm'
 const GLM_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
 const GLM_MODEL = 'glm-4.7-flash'
 
 /**
- * Verifica o status HTTP real de uma URL (usado pela IA pra diagnosticar sites que não abrem).
+ * Busca planos reais do banco de dados para o contexto da IA.
+ */
+async function buildPlansContext(): Promise<string> {
+  try {
+    const plans = await db.subscriptionPlan.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+    })
+
+    if (plans.length === 0) return 'Planos: nenhum plano ativo no momento.'
+
+    const planList = plans.map((p) => {
+      const features = JSON.parse(p.features || '[]') as string[]
+      return `  - ${p.name} (slug: ${p.slug}): R$ ${p.priceMonthly.toFixed(2)}/mês
+     Benefícios: ${features.join(', ')}
+     Limites: ${p.maxDeploys} deploys, ${p.maxDatabases} bancos, ${p.maxCustomDomains} domínios personalizados`
+    }).join('\n')
+
+    return `PLANOS DE ASSINATURA DISPONÍVEIS (use estes preços reais, nunca invente):
+${planList}
+
+Para assinar: o usuário deve acessar /painel/planos e escolher um plano.
+Métodos de pagamento: PIX (aprovado na hora) ou Cartão de crédito.`
+  } catch {
+    return 'Planos: erro ao carregar.'
+  }
+}
+
+/**
+ * Constrói contexto com os sistemas da loja (catálogo).
+ */
+function buildSystemsContext(): string {
+  const categories: Record<string, typeof SYSTEMS> = {}
+  for (const s of SYSTEMS) {
+    if (!categories[s.category]) categories[s.category] = []
+    categories[s.category].push(s)
+  }
+
+  const categoryList = Object.entries(categories).map(([cat, systems]) => {
+    const sysList = systems.map((s) => {
+      const featuresList = s.features.slice(0, 5).map((f) => f.title).join(', ')
+      const priceStr = s.startingPrice || 'sob consulta'
+      return `    • ${s.name} — ${s.tagline}
+      Preço: ${priceStr}
+      Principais features: ${featuresList}
+      Tecnologias: ${s.technologies.join(', ')}
+      URL: /loja/${s.slug}`
+    }).join('\n')
+    return `  Categoria: ${cat}
+${sysList}`
+  }).join('\n\n')
+
+  return `CATÁLOGO DE SISTEMAS DA LOJA (use estas informações reais, nunca invente):
+${categoryList}
+
+Para ver o catálogo completo: /loja
+Para ver sistemas por categoria: /loja/categorias`
+}
+
+/**
+ * Verifica o status HTTP real de uma URL.
  */
 async function checkSiteStatus(url: string): Promise<{
   status: number | null
@@ -122,15 +183,33 @@ REGRAS CRÍTICAS:
 6. Responda sempre em português do Brasil, de forma amigável e objetiva.`
 }
 
-const SYSTEM_PROMPT = `Você é o assistente de suporte da LipeHost, plataforma de deploy de aplicações web.
+const SYSTEM_PROMPT = `Você é o assistente de suporte da LipeHost, plataforma de deploy de aplicações web e SaaS.
 
 Sua função:
 - Ajudar usuários com problemas em seus deploys
 - Diagnosticar sites que não abrem (você recebe o status HTTP real no contexto)
+- Informar sobre planos de assinatura e preços (dados reais no contexto)
+- Recomendar sistemas da loja com base na necessidade do cliente
 - Sugerir soluções: redeploy, configurar env vars, custom domain, etc.
 - Criar tickets quando precisar de intervenção humana
 
-Quando o usuário relatar "site não abre":
+QUANDO O USUÁRIO PERGUNTAR SOBRE PLANOS OU PREÇOS:
+1. Use SEMPRE os dados do contexto "PLANOS DE ASSINATURA DISPONÍVEIS"
+2. Liste os planos com preços reais e benefícios
+3. Compare planos se o usuário pedir (ex: "qual a diferença entre STARTER e PRO?")
+4. Direcione para /painel/planos para assinar
+5. NUNCA invente preços — use apenas os do contexto
+
+QUANDO O USUÁRIO PEDIR UM SISTEMA/TIPO DE APLICATIVO:
+1. Use SEMPRE os dados do contexto "CATÁLOGO DE SISTEMAS DA LOJA"
+2. Se pedir "app de mobilidade" ou "Uber clone" → mostre o sistema de Mobilidade
+3. Se pedir "delivery" ou "app de entrega" → mostre o sistema de Delivery
+4. Se pedir "marketplace" → mostre o sistema de Marketplace
+5. Liste as features principais, preço e tecnologias
+6. Direcione para a URL do sistema: /loja/[slug]
+7. Para ver todos: /loja ou /loja/categorias
+
+QUANDO O USUÁRIO RELATAR "SITE NÃO ABRE":
 1. Diga "Estou analisando..." inicialmente (você já recebeu o HTTP check no contexto)
 2. Com base no HTTP check, diga o resultado:
    - 200 OK: site está funcionando, pode ser cache (Ctrl+Shift+R) ou DNS ainda propagando
@@ -140,7 +219,7 @@ Quando o usuário relatar "site não abre":
 3. Mostre o caminho: "Acesse /painel/projetos/[ID-DO-PROJETO] e clique no botão Deploy"
 4. Ofereça abrir ticket se o problema persistir
 
-Quando pedir "falar com humano" ou "abrir ticket":
+QUANDO PEDIR "FALAR COM HUMANO" OU "ABRIR TICKET":
 - Confirme os detalhes
 - Sugira criar ticket em: /painel/tickets -> "Abrir ticket"
 
@@ -164,10 +243,14 @@ export async function POST(req: Request) {
 
     // Build context with user's deploy data + real HTTP status checks
     const userContext = await buildUserContext(userId)
+    const plansContext = await buildPlansContext()
+    const systemsContext = buildSystemsContext()
 
     // Build the full message array with system + context + history
     const fullMessages = [
       { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: plansContext },
+      { role: 'system', content: systemsContext },
       { role: 'system', content: userContext.replace('(a partir do session)', userName) },
       ...messages,
     ]
