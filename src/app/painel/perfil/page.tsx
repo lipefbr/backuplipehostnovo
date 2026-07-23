@@ -20,6 +20,7 @@ interface UserProfile {
   avatar: string | null
   username: string | null
   phone: string | null
+  cpf: string | null
   addressStreet: string | null
   addressNumber: string | null
   addressComplement: string | null
@@ -30,6 +31,7 @@ interface UserProfile {
   plan: string
   planStatus: string
   planRenewalDate: string | null
+  sitesForcedOffline: boolean
   totalSpent: string
   ordersCount: number
   deploysCount: number
@@ -80,6 +82,7 @@ export default function PainelPerfilPage() {
     name: '',
     username: '',
     phone: '',
+    cpf: '',
     addressStreet: '',
     addressNumber: '',
     addressComplement: '',
@@ -116,6 +119,7 @@ export default function PainelPerfilPage() {
         name: data.user.name || '',
         username: data.user.username || '',
         phone: data.user.phone || '',
+        cpf: data.user.cpf || '',
         addressStreet: data.user.addressStreet || '',
         addressNumber: data.user.addressNumber || '',
         addressComplement: data.user.addressComplement || '',
@@ -388,6 +392,25 @@ export default function PainelPerfilPage() {
                 className="h-10 bg-white border-slate-300 text-slate-900"
                 placeholder="(11) 99999-9999"
               />
+            </div>
+            <div>
+              <Label className="text-xs text-slate-700 mb-1.5 block">
+                CPF {profile.cpf ? '✓ cadastrado' : '(obrigatório para assinaturas)'}
+              </Label>
+              <Input
+                value={form.cpf}
+                onChange={(e) => setForm({ ...form, cpf: e.target.value })}
+                className={`h-10 font-mono ${profile.cpf ? 'bg-slate-50 border-slate-200 text-slate-500' : 'bg-white border-slate-300 text-slate-900'}`}
+                placeholder="000.000.000-00"
+                readOnly={!!profile.cpf}
+                maxLength={14}
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                {profile.cpf
+                  ? '🔒 CPF cadastrado — não pode ser alterado (contate o suporte se houver erro)'
+                  : 'Digite seu CPF — será necessário para pagamentos'
+                }
+              </p>
             </div>
           </div>
 

@@ -19,6 +19,7 @@ model User {
   avatar        String?   // URL da foto de perfil (pode ser data URL ou URL externa)
   username      String?   // @username (display name público, opcional)
   phone         String?   // telefone (opcional)
+  cpf           String?   // CPF (obrigatório para pagamentos, não editável após validar)
   // Endereço (opcional)
   addressStreet String?
   addressNumber String?
@@ -28,9 +29,11 @@ model User {
   addressState  String?   // UF (2 letras)
   addressZip    String?   // CEP
   // Assinatura
-  plan          String    @default("FREE") // "FREE" | "STARTER" | "PRO" | "ENTERPRISE"
-  planStatus    String    @default("active") // "active" | "canceled" | "past_due" | "trialing"
-  planRenewalDate DateTime? // data de renovação
+  plan          String    @default("FREE") // "FREE" | "STARTER" | "PRO" | "ENTERPRISE" ou custom
+  planStatus    String    @default("active") // "active" | "canceled" | "past_due" | "trialing" | "suspended"
+  planRenewalDate DateTime? // data de renovação (dia do mês que cobra)
+  // Admin control — force site offline/online
+  sitesForcedOffline Boolean @default(false) // se true, todos deploys do usuário param
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   projects      Project[]
@@ -38,6 +41,88 @@ model User {
   deploys       Deploy[]
   tickets       Ticket[]
   databases     Database[]
+  subscriptions Subscription[]
+  payments      Payment[]
+}
+
+model SubscriptionPlan {
+  id              String   @id @default(cuid())
+  name            String   @unique // "STARTER", "PRO", etc
+  slug            String   @unique
+  description     String?
+  priceMonthly    Float    // preço mensal em R$
+  priceYearly     Float?   // preço anual em R$ (opcional, 10x monthly típico)
+  features        String   // JSON string de features/benefícios
+  maxDeploys      Int      @default(1)
+  maxDatabases    Int      @default(1)
+  maxCustomDomains Int     @default(0)
+  isActive        Boolean  @default(true) // se false, não aparece para nova assinatura
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  subscriptions   Subscription[]
+  payments        Payment[]
+}
+
+model Subscription {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId          String
+  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
+  status          String   @default("active") // "active" | "canceled" | "past_due" | "suspended" | "trialing"
+  paymentMethod   String?  // "pix" | "credit_card"
+  // Mercado Pago
+  mpCustomerId    String?  // ID do cliente no MP
+  mpSubscriptionId String? // ID da assinatura recorrente no MP (cartão)
+  // Cobrança
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime? // próximo vencimento
+  daysPastDue      Int      @default(0) // dias de atraso (0 = em dia)
+  // Trial
+  trialStart      DateTime?
+  trialEnd        DateTime?
+  // Cancelamento
+  canceledAt      DateTime?
+  cancelReason    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  payments        Payment[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  subscriptionId  String?
+  subscription    Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId          String?
+  plan            SubscriptionPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  amount          Float    // valor em R$
+  paymentMethod   String   // "pix" | "credit_card" | "boleto"
+  status          String   @default("pending") // "pending" | "approved" | "rejected" | "cancelled" | "refunded"
+  // Mercado Pago
+  mpPaymentId     String?  // ID do pagamento no MP
+  mpPreferenceId  String?  // ID da preference (checkout)
+  mpPixQrCode     String?  // QR code do PIX (base64 ou texto)
+  mpPixQrCodeImage String? // imagem do QR code (data URL)
+  mpPixTicketUrl  String?  // URL do boleto/PIX
+  // Datas
+  dueDate         DateTime? // data de vencimento
+  paidAt          DateTime? // data que foi pago
+  // CPF do cliente no momento do pagamento (snapshot)
+  customerCpf     String?
+  customerName    String?
+  customerEmail   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([subscriptionId])
 }
 
 model System {

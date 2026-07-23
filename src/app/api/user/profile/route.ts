@@ -52,6 +52,7 @@ export async function GET() {
       avatar: user.avatar,
       username: user.username,
       phone: user.phone,
+      cpf: user.cpf,
       // Address
       addressStreet: user.addressStreet,
       addressNumber: user.addressNumber,
@@ -64,6 +65,8 @@ export async function GET() {
       plan: user.plan,
       planStatus: user.planStatus,
       planRenewalDate: user.planRenewalDate,
+      // Admin control
+      sitesForcedOffline: user.sitesForcedOffline,
       // Stats
       totalSpent: totalSpent.toFixed(2),
       ordersCount: user.orders.length,
@@ -141,6 +144,22 @@ export async function PATCH(req: Request) {
     // Avatar URL (optional)
     if (typeof body.avatar === 'string') {
       update.avatar = body.avatar || null
+    }
+
+    // CPF — only allowed if user doesn't have one yet (cannot edit after set)
+    if (typeof body.cpf === 'string') {
+      const { validateCPF } = await import('@/lib/mercadopago')
+      const cpf = validateCPF(body.cpf)
+      if (!cpf) {
+        return NextResponse.json({ error: 'CPF inválido. Digite 11 números.' }, { status: 400 })
+      }
+      if (user.cpf && user.cpf !== cpf) {
+        return NextResponse.json(
+          { error: 'CPF não pode ser alterado após cadastrado. Contate o suporte.' },
+          { status: 400 }
+        )
+      }
+      update.cpf = cpf
     }
 
     // Address fields (all optional)
